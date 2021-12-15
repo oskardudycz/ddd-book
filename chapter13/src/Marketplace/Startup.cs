@@ -89,9 +89,7 @@ namespace Marketplace
                     purgomalumClient.CheckForProfanity
                 )
                 .AddPaidServicesModule("PaidServices")
-                .AddJsonFormatters()
-                .AddApiExplorer()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .AddApiExplorer();
 
             services.AddSpaStaticFiles(
                 configuration =>
