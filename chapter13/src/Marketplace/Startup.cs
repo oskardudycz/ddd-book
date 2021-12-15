@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Swagger;
 using static Marketplace.Infrastructure.RavenDb.Configuration;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
@@ -101,7 +102,7 @@ namespace Marketplace
                 c =>
                     c.SwaggerDoc(
                         "v1",
-                        new Info
+                        new OpenApiInfo
                         {
                             Title = "ClassifiedAds", Version = "v1"
                         }

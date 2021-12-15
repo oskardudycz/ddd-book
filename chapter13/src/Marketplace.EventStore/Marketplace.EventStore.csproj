@@ -10,9 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="EventStore.Client" Version="5.0.1" />
+    <PackageReference Include="EventStore.Client" Version="21.2.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Include="System.Interactive" Version="5.1.0" />
   </ItemGroup>
 
