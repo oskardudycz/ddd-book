@@ -7,6 +7,7 @@ using Marketplace.EventSourcing;
 using Marketplace.EventStore;
 using Marketplace.RavenDb;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using static Marketplace.Ads.Queries.Projections.ReadModels;
@@ -31,7 +32,8 @@ namespace Marketplace.Ads
                     new ClassifiedAdsCommandService(
                         c.GetAggregateStore(),
                         currencyLookup,
-                        uploadFile
+                        uploadFile,
+                        c.GetRequiredService<ILogger<ClassifiedAdsCommandService>>()
                     )
             );
 
@@ -52,13 +54,16 @@ namespace Marketplace.Ads
                         ),
                         SubscriptionName,
                         StreamName.AllStream,
+                        c.GetRequiredService<ILogger<SubscriptionManager>>(),
                         new RavenDbProjection<ClassifiedAdDetails>(
                             GetSession,
-                            ClassifiedAdDetailsProjection.GetHandler
+                            ClassifiedAdDetailsProjection.GetHandler,
+                            c.GetRequiredService<ILogger<RavenDbProjection<ClassifiedAdDetails>>>()
                         ),
                         new RavenDbProjection<MyClassifiedAds>(
                             GetSession,
-                            MyClassifiedAdsProjection.GetHandler
+                            MyClassifiedAdsProjection.GetHandler,
+                            c.GetRequiredService<ILogger<RavenDbProjection<MyClassifiedAds>>>()
                         )
                     );
                 }

@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Swagger;
 using static Marketplace.Infrastructure.RavenDb.Configuration;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
@@ -61,8 +62,8 @@ namespace Marketplace
 
             services.AddSingleton<IEventStore>(eventStore);
 
-            services.AddSingleton<IAggregateStore>(
-                new EsAggregateStore(eventStore)
+            services.AddSingleton<IAggregateStore>(sp =>
+                new EsAggregateStore(eventStore, sp.GetRequiredService<ILogger<EsAggregateStore>>())
             );
             services.AddSingleton(documentStore);
 

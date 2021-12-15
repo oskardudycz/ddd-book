@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Marketplace.Ads.Domain.ClassifiedAds;
 using Marketplace.Ads.Domain.Shared;
 using Marketplace.EventSourcing;
+using Microsoft.Extensions.Logging;
 using static Marketplace.Ads.ClassifiedAds.Commands;
 
 namespace Marketplace.Ads.ClassifiedAds
@@ -11,7 +12,8 @@ namespace Marketplace.Ads.ClassifiedAds
         public ClassifiedAdsCommandService(
             IAggregateStore store,
             ICurrencyLookup currencyLookup,
-            UploadFile uploader) : base(store)
+            UploadFile uploader,
+            ILogger<ClassifiedAdsCommandService> logger) : base(store, logger)
         {
             CreateWhen<V1.Create>(
                 cmd => ClassifiedAdId.FromGuid(cmd.Id),

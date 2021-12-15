@@ -3,20 +3,19 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using Marketplace.EventSourcing;
-using Marketplace.EventStore.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Marketplace.EventStore
 {
     public class SubscriptionManager
     {
-        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         readonly ICheckpointStore _checkpointStore;
         readonly string _name;
         readonly StreamName _streamName;
         readonly IEventStoreConnection _connection;
         readonly ISubscription[] _subscriptions;
         EventStoreCatchUpSubscription _subscription;
+        readonly ILogger<SubscriptionManager> _logger;
         bool _isAllStream;
 
         public SubscriptionManager(
@@ -24,6 +23,7 @@ namespace Marketplace.EventStore
             ICheckpointStore checkpointStore,
             string name,
             StreamName streamName,
+            ILogger<SubscriptionManager> logger,
             params ISubscription[] subscriptions
         )
         {
@@ -33,20 +33,21 @@ namespace Marketplace.EventStore
             _streamName      = streamName;
             _subscriptions   = subscriptions;
             _isAllStream     = streamName.IsAllStream;
+            _logger          = logger;
         }
 
         public async Task Start()
         {
             var settings = new CatchUpSubscriptionSettings(
                 2000, 500,
-                Log.IsDebugEnabled(),
+                _logger.IsEnabled(LogLevel.Debug),
                 false, _name
             );
 
-            Log.Debug("Starting the projection manager...");
+            _logger.LogDebug("Starting the projection manager...");
 
             var position = await _checkpointStore.GetCheckpoint();
-            Log.Debug("Retrieved the checkpoint: {checkpoint}", position);
+            _logger.LogDebug("Retrieved the checkpoint: {Checkpoint}", position);
 
             _subscription = _isAllStream
                 ? (EventStoreCatchUpSubscription)
@@ -62,7 +63,7 @@ namespace Marketplace.EventStore
                     EventAppeared
                 );
 
-            Log.Debug("Subscribed to $all stream");
+            _logger.LogDebug("Subscribed to $all stream");
 
             Position? GetAllStreamPosition()
                 => position.HasValue
@@ -82,7 +83,7 @@ namespace Marketplace.EventStore
 
             var @event = resolvedEvent.Deserialze();
 
-            Log.Debug("Projecting event {event}", @event.ToString());
+            _logger.LogDebug("Projecting event {Event}", @event.ToString());
 
             try
             {
@@ -99,9 +100,9 @@ namespace Marketplace.EventStore
             }
             catch (Exception e)
             {
-                Log.Error(
+                _logger.LogError(
                     e,
-                    "Error occured when projecting the event {event}",
+                    "Error occured when projecting the event {Event}",
                     @event
                 );
                 throw;

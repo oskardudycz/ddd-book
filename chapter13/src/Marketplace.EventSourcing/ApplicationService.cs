@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Marketplace.EventSourcing.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Marketplace.EventSourcing
 {
@@ -12,9 +12,13 @@ namespace Marketplace.EventSourcing
 
         readonly IAggregateStore _store;
 
-        protected ApplicationService(IAggregateStore store) => _store = store;
+        private readonly ILogger logger;
 
-        static ILog Log => LogProvider.GetCurrentClassLogger();
+        protected ApplicationService(IAggregateStore store, ILogger logger)
+        {
+            _store = store;
+            this.logger = logger;
+        } 
 
         public Task Handle<TCommand>(TCommand command)
         {
@@ -23,7 +27,7 @@ namespace Marketplace.EventSourcing
                     $"No registered handler for command {typeof(TCommand).Name}"
                 );
 
-            Log.DebugFormat("Handling command: {command}", command.ToString());
+            logger.LogDebug("Handling command: {Command}", command.ToString());
             return handler(command);
         }
 
