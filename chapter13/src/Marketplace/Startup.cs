@@ -18,7 +18,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Swagger;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using static Marketplace.Infrastructure.RavenDb.Configuration;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
@@ -58,6 +59,8 @@ namespace Marketplace
                 Configuration["ravenDb:server"]
             );
 
+            services.AddCors();
+            
             services.AddSingleton(new ImageQueryService(ImageStorage.GetFile));
             services.AddSingleton(esConnection);
 
@@ -68,7 +71,7 @@ namespace Marketplace
             );
             services.AddSingleton(documentStore);
 
-            services.AddSingleton<IHostedService, EventStoreService>();
+            services.AddHostedService<EventStoreService>();
 
             services
                 .AddAuthentication(
@@ -78,7 +81,12 @@ namespace Marketplace
 
             services
                 .AddMvcCore(
-                    options => options.Conventions.Add(new CommandConvention())
+                    options =>
+                    {
+                        // options.Conventions.Add(new CommandConvention());
+                        // TODO: Get rid of that: https://stackoverflow.com/questions/57684093/using-usemvc-to-configure-mvc-is-not-supported-while-using-endpoint-routing
+                        options.EnableEndpointRouting = false;
+                    }
                 )
                 .AddApplicationPart(GetType().Assembly)
                 .AddAdsModule(
@@ -91,7 +99,12 @@ namespace Marketplace
                     purgomalumClient.CheckForProfanity
                 )
                 .AddPaidServicesModule("PaidServices")
-                .AddApiExplorer();
+                .AddApiExplorer()  
+                .AddNewtonsoftJson(o =>
+                {
+                    o.SerializerSettings.Converters.Add(new StringEnumConverter());
+                    o.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                });
 
             services.AddSpaStaticFiles(
                 configuration =>
@@ -112,10 +125,18 @@ namespace Marketplace
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+
+                // TODO: fix that to allow only SPA url
+                app.UseCors(
+                    options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
+                );
+            }
 
             app.UseAuthentication();
-
+            
             app.UseMvc(
                 routes =>
                 {

@@ -249,3 +249,4 @@ ModelManifest.xml
 .idea/
 
 .DS_Store
+/chapter13/src/Marketplace/ClientApp/dist
