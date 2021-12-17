@@ -59,7 +59,7 @@ namespace Marketplace.EventStore
 
         static string GetStreamName<T>(AggregateId<T> aggregateId) 
             where T : AggregateRoot 
-            => $"{typeof(T).Name}-{aggregateId}";
+            => StreamName.For<T>(aggregateId);
 
         static string GetStreamName<T>(T aggregate)
             where T : AggregateRoot
