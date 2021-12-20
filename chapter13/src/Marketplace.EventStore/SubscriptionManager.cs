@@ -91,7 +91,7 @@ namespace Marketplace.EventStore
             object @event = null;
             try
             {
-                @event = resolvedEvent.Deserialze();
+                @event = resolvedEvent.Deserialize();
 
                 _logger.LogDebug("Projecting event {Event}", @event.ToString());
 

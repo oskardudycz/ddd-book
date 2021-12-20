@@ -36,7 +36,7 @@ namespace Marketplace.EventStore
                 return null;
             }
 
-            return eventData.Deserialze<Checkpoint>()?.Position;
+            return eventData.Deserialize<Checkpoint>()?.Position;
         }
 
         public Task StoreCheckpoint(long? checkpoint)

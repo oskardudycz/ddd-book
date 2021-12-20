@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using Marketplace.EventSourcing;
 using Newtonsoft.Json;
 
@@ -11,10 +15,10 @@ namespace Marketplace.EventStore
 {
     public class EventStore : IEventStore
     {
-        readonly IEventStoreConnection _connection;
+        readonly EventStoreClient _client;
 
-        public EventStore(IEventStoreConnection connection)
-            => _connection = connection;
+        public EventStore(EventStoreClient client)
+            => _client = client;
 
         public Task AppendEvents(
             string streamName,
@@ -28,9 +32,8 @@ namespace Marketplace.EventStore
                 .Select(
                     @event =>
                         new EventData(
-                            Guid.NewGuid(),
+                            Uuid.NewUuid(), 
                             TypeMapper.GetTypeName(@event.GetType()),
-                            true,
                             Serialize(@event),
                             Serialize(
                                 new EventMetadata
@@ -42,9 +45,9 @@ namespace Marketplace.EventStore
                 )
                 .ToArray();
 
-            return _connection.AppendToStreamAsync(
+            return _client.AppendToStreamAsync(
                 streamName,
-                version,
+                StreamRevision.FromInt64(version),
                 preparedEvents
             );
 
@@ -56,43 +59,35 @@ namespace Marketplace.EventStore
             string streamName,
             params object[] events
         )
-            => AppendEvents(streamName, ExpectedVersion.Any, events);
+            => AppendEvents(streamName, StreamState.Any, events);
 
         public async Task<IEnumerable<object>> LoadEvents(string stream)
         {
-            const int pageSize = 4096;
+            await using var readResult = _client.ReadStreamAsync(
+                Direction.Forwards,
+                stream,
+                StreamPosition.Start
+            );
 
-            var start  = 0;
-            var events = new List<object>();
-
-            do
-            {
-                var page = await _connection.ReadStreamEventsForwardAsync(
-                    stream, start, pageSize, true
+            if(await readResult.ReadState != ReadState.Ok)
+                throw new ArgumentOutOfRangeException(
+                    nameof(stream), $"Stream '{stream}' was not found"
                 );
 
-                if (page.Status == SliceReadStatus.StreamNotFound)
-                    throw new ArgumentOutOfRangeException(
-                        nameof(stream), $"Stream '{stream}' was not found"
-                    );
-
-                events.AddRange(
-                    page.Events.Select(
-                        resolvedEvent => resolvedEvent.Deserialze()
-                    )
-                );
-                if (page.IsEndOfStream) break;
-
-                start += pageSize;
-            } while (true);
-
-            return events;
+            return await readResult
+                .Select(@event => @event.Deserialize())
+                .ToListAsync();
         }
 
         public async Task<bool> StreamExists(string stream)
         {
-            var result = await _connection.ReadEventAsync(stream, 1, false);
-            return result.Status != EventReadStatus.NoStream;
+            await using var readResult = _client.ReadStreamAsync(
+                Direction.Forwards,
+                stream,
+                StreamPosition.Start
+            );
+
+            return await readResult.ReadState == ReadState.Ok;
         }
     }
 }

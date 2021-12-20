@@ -1,4 +1,5 @@
-﻿using EventStore.ClientAPI;
+﻿using EventStore.Client;
+using EventStore.ClientAPI;
 using Marketplace.Ads;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
@@ -48,7 +49,13 @@ namespace Marketplace
                 ConnectionSettings.Create().KeepReconnecting(),
                 Environment.ApplicationName
             );
-            var eventStore = new EventStore.EventStore(esConnection);
+
+            var client = new EventStoreClient(
+                EventStoreClientSettings.Create(
+                    Configuration["eventStore:gRPCConnectionString"]
+                )
+            );
+            var eventStore = new EventStore.EventStore(client);
             var purgomalumClient = new PurgomalumClient();
 
             var documentStore = ConfigureRavenDb(
