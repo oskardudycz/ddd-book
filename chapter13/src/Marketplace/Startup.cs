@@ -64,6 +64,7 @@ namespace Marketplace
             
             services.AddSingleton(new ImageQueryService(ImageStorage.GetFile));
             services.AddSingleton(esConnection);
+            services.AddSingleton(client);
 
             services.AddSingleton<IEventStore>(eventStore);
 

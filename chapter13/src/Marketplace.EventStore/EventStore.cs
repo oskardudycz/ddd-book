@@ -1,12 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using EventStore.Client;
 using Marketplace.EventSourcing;
 using Newtonsoft.Json;

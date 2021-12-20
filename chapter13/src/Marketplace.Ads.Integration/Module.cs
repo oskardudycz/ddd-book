@@ -1,4 +1,5 @@
 using System;
+using EventStore.Client;
 using EventStore.ClientAPI;
 using Marketplace.Ads.Integration.ClassifiedAds;
 using Marketplace.EventSourcing;
@@ -33,12 +34,13 @@ namespace Marketplace.Ads.Integration
                             .OpenAsyncSession(databaseName);
 
                     var connection = c.GetEsConnection();
+                    var client = c.GetEsClient();
                     var eventStore = c.GetEventStore();
 
                     return new SubscriptionManager(
                         connection,
                         new EsCheckpointStore(
-                            connection, SubscriptionName
+                            client, SubscriptionName
                         ),
                         SubscriptionName,
                         StreamName.AllStream,
@@ -68,5 +70,10 @@ namespace Marketplace.Ads.Integration
             this IServiceProvider provider
         )
             => provider.GetRequiredService<IEventStoreConnection>();
+        
+        static EventStoreClient GetEsClient(
+            this IServiceProvider provider
+        )
+            => provider.GetRequiredService<EventStoreClient>();
     }
 }

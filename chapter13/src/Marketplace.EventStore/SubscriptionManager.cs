@@ -74,11 +74,11 @@ namespace Marketplace.EventStore
 
             Position? GetAllStreamPosition()
                 => position.HasValue
-                    ? new Position(position.Value, position.Value)
+                    ? new Position((long)position.Value, (long)position.Value)
                     : AllCheckpoint.AllStart;
 
             long? GetStreamPosition()
-                => position ?? StreamCheckpoint.StreamStart;
+                => (long?)position ?? StreamCheckpoint.StreamStart;
         }
 
         async Task EventAppeared(
@@ -102,8 +102,8 @@ namespace Marketplace.EventStore
                 await _checkpointStore.StoreCheckpoint(
                     // ReSharper disable once PossibleInvalidOperationException
                     _isAllStream
-                        ? resolvedEvent.OriginalPosition.Value.CommitPosition
-                        : resolvedEvent.Event.EventNumber
+                        ? (ulong)resolvedEvent.OriginalPosition.Value.CommitPosition
+                        : (ulong)resolvedEvent.Event.EventNumber
                 );
             }
             catch (Exception e)

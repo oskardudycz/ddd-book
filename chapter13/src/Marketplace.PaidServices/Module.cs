@@ -1,4 +1,5 @@
 using System;
+using EventStore.Client;
 using EventStore.ClientAPI;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
@@ -78,14 +79,15 @@ namespace Marketplace.PaidServices
                 {
                     var service =
                         c.GetRequiredService<ClassifiedAdCommandService>();
-
                     var connection =
                         c.GetRequiredService<IEventStoreConnection>();
+                    var client =
+                        c.GetRequiredService<EventStoreClient>();
                     const string subscriptionName = "servicesReactors";
 
                     return new SubscriptionManager(
                         connection,
-                        new EsCheckpointStore(connection, subscriptionName),
+                        new EsCheckpointStore(client, subscriptionName),
                         subscriptionName,
                         StreamName.Custom(StreamNames.AdsIntegrationStream),
                         c.GetRequiredService<ILogger<SubscriptionManager>>(),

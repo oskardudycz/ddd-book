@@ -19,15 +19,15 @@ namespace Marketplace.RavenDb
             _checkpointName = checkpointName;
         }
 
-        public async Task<long?> GetCheckpoint()
+        public async Task<ulong?> GetCheckpoint()
         {
             using var session = _getSession();
 
             var checkpoint = await session.LoadAsync<Checkpoint>(_checkpointName);
-            return checkpoint?.Position ?? AllCheckpoint.AllStart?.CommitPosition;
+            return checkpoint?.Position ?? (ulong?)AllCheckpoint.AllStart?.CommitPosition;
         }
 
-        public async Task StoreCheckpoint(long? position)
+        public async Task StoreCheckpoint(ulong? position)
         {
             using var session = _getSession();
 
@@ -49,7 +49,7 @@ namespace Marketplace.RavenDb
         class Checkpoint
         {
             public string Id { get; set; }
-            public long? Position { get; set; }
+            public ulong? Position { get; set; }
         }
     }
 }

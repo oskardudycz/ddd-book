@@ -22,7 +22,7 @@ namespace Marketplace.Users.Projections
                     () => Update(e.UserId, x => x.DisplayName = e.DisplayName),
                 V1.ProfilePhotoUploaded e =>
                     () => Update(e.UserId, x => x.PhotoUrl = e.PhotoUrl),
-                _ => (Func<Task>) null
+                _ => null
             };
 
             Task Update(Guid id, Action<ReadModels.UserDetails> update)
