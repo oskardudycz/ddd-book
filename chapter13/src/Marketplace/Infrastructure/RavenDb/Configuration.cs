@@ -1,6 +1,4 @@
 using Raven.Client.Documents;
-using Raven.Client.ServerWide;
-using Raven.Client.ServerWide.Operations;
 
 namespace Marketplace.Infrastructure.RavenDb
 {

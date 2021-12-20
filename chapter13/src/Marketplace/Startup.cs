@@ -8,7 +8,6 @@ using Marketplace.Infrastructure.Vue;
 using Marketplace.Modules.Images;
 using Marketplace.PaidServices;
 using Marketplace.Users;
-using Marketplace.WebApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,10 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
 using static Marketplace.Infrastructure.RavenDb.Configuration;
-using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 // ReSharper disable UnusedMember.Global
 
@@ -34,7 +30,7 @@ namespace Marketplace
         public const string CookieScheme = "MarketplaceScheme";
 
         public Startup(
-            IHostingEnvironment environment,
+            IWebHostEnvironment  environment,
             IConfiguration configuration
         )
         {
@@ -43,7 +39,7 @@ namespace Marketplace
         }
 
         IConfiguration Configuration { get; }
-        IHostingEnvironment Environment { get; }
+        IWebHostEnvironment  Environment { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -58,8 +54,6 @@ namespace Marketplace
             var documentStore = ConfigureRavenDb(
                 Configuration["ravenDb:server"]
             );
-
-            services.AddCors();
             
             services.AddSingleton(new ImageQueryService(ImageStorage.GetFile));
             services.AddSingleton(esConnection);
@@ -83,8 +77,6 @@ namespace Marketplace
                 .AddMvcCore(
                     options =>
                     {
-                        // options.Conventions.Add(new CommandConvention());
-                        // TODO: Get rid of that: https://stackoverflow.com/questions/57684093/using-usemvc-to-configure-mvc-is-not-supported-while-using-endpoint-routing
                         options.EnableEndpointRouting = false;
                     }
                 )
@@ -99,12 +91,7 @@ namespace Marketplace
                     purgomalumClient.CheckForProfanity
                 )
                 .AddPaidServicesModule("PaidServices")
-                .AddApiExplorer()  
-                .AddNewtonsoftJson(o =>
-                {
-                    o.SerializerSettings.Converters.Add(new StringEnumConverter());
-                    o.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                });
+                .AddApiExplorer();
 
             services.AddSpaStaticFiles(
                 configuration =>
@@ -123,16 +110,11 @@ namespace Marketplace
             );
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-
-                // TODO: fix that to allow only SPA url
-                app.UseCors(
-                    options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
-                );
             }
 
             app.UseAuthentication();

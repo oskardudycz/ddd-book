@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using EventStore.ClientAPI;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
