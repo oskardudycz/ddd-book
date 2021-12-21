@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using Marketplace.EventSourcing;
 using Microsoft.Extensions.Logging;
 
@@ -12,14 +13,14 @@ namespace Marketplace.EventStore
         readonly ICheckpointStore _checkpointStore;
         readonly string _name;
         readonly StreamName _streamName;
-        readonly IEventStoreConnection _connection;
+        readonly EventStoreClient _client;
         readonly ISubscription[] _subscriptions;
-        EventStoreCatchUpSubscription _subscription;
+        StreamSubscription _subscription;
         readonly ILogger<SubscriptionManager> _logger;
         bool _isAllStream;
 
         public SubscriptionManager(
-            IEventStoreConnection connection,
+            EventStoreClient client,
             ICheckpointStore checkpointStore,
             string name,
             StreamName streamName,
@@ -27,7 +28,7 @@ namespace Marketplace.EventStore
             params ISubscription[] subscriptions
         )
         {
-            _connection = connection;
+            _client = client;
             _checkpointStore = checkpointStore;
             _name = name;
             _streamName = streamName;
@@ -38,12 +39,6 @@ namespace Marketplace.EventStore
 
         public async Task Start()
         {
-            var settings = new CatchUpSubscriptionSettings(
-                2000, 500,
-                _logger.IsEnabled(LogLevel.Debug),
-                false, _name
-            );
-
             _logger.LogDebug("Starting the projection manager...");
 
             var position = await _checkpointStore.GetCheckpoint();
@@ -53,45 +48,65 @@ namespace Marketplace.EventStore
             );
 
             _subscription = _isAllStream
-                ? (EventStoreCatchUpSubscription)
-                _connection.SubscribeToAllFrom(
-                    GetAllStreamPosition(),
-                    settings,
-                    EventAppeared,
-                    LiveProcessingStarted,
-                    SubscriptionDropped
-                )
-                : _connection.SubscribeToStreamFrom(
-                    _streamName,
-                    GetStreamPosition(),
-                    settings,
-                    EventAppeared,
-                    LiveProcessingStarted,
-                    SubscriptionDropped
-                );
+                ? await SubscribeToAll()
+                : await SubscribeToStream();
 
             _logger.LogDebug("Subscribed to $all stream");
 
-            Position? GetAllStreamPosition()
-                => position.HasValue
-                    ? new Position(position.Value, position.Value)
-                    : AllCheckpoint.AllStart;
+            Task<StreamSubscription> SubscribeToAll()
+            {
+                if (position.HasValue)
+                {
+                    return _client.SubscribeToAllAsync(
+                        new Position(position.Value, position.Value),
+                        EventAppeared,
+                        false,
+                        SubscriptionDropped
+                    );
+                }
 
-            long? GetStreamPosition()
-                => position ?? StreamCheckpoint.StreamStart;
+                return _client.SubscribeToAllAsync(
+                    EventAppeared,
+                    false,
+                    SubscriptionDropped
+                );
+            }
+
+            Task<StreamSubscription> SubscribeToStream()
+            {
+                if (position.HasValue)
+                {
+                    return _client.SubscribeToStreamAsync(
+                        _streamName,
+                        StreamPosition.FromInt64((long)position.Value),
+                        EventAppeared,
+                        false,
+                        SubscriptionDropped
+                    );
+                }
+
+                return _client.SubscribeToStreamAsync(
+                    _streamName,
+                    EventAppeared,
+                    false,
+                    SubscriptionDropped
+                );
+            }
         }
 
         async Task EventAppeared(
-            EventStoreCatchUpSubscription _,
-            ResolvedEvent resolvedEvent
+            StreamSubscription _,
+            ResolvedEvent resolvedEvent,
+            CancellationToken ct
         )
         {
             if (resolvedEvent.Event.EventType.StartsWith("$")) return;
 
             object @event = null;
+
             try
             {
-                @event = resolvedEvent.Deserialze();
+                @event = resolvedEvent.Deserialize();
 
                 _logger.LogDebug("Projecting event {Event}", @event.ToString());
 
@@ -100,9 +115,8 @@ namespace Marketplace.EventStore
                 );
 
                 await _checkpointStore.StoreCheckpoint(
-                    // ReSharper disable once PossibleInvalidOperationException
                     _isAllStream
-                        ? resolvedEvent.OriginalPosition.Value.CommitPosition
+                        ? resolvedEvent.OriginalPosition!.Value.CommitPosition
                         : resolvedEvent.Event.EventNumber
                 );
             }
@@ -117,22 +131,15 @@ namespace Marketplace.EventStore
             }
         }
 
-        private void LiveProcessingStarted(
-            EventStoreCatchUpSubscription subscription)
-            => _logger.LogDebug(
-                "Subscription {SubscriptionName} has caught up, now processing live",
-                _name
-            );
-
         private void SubscriptionDropped(
-            EventStoreCatchUpSubscription subscription,
-            SubscriptionDropReason reason,
+            StreamSubscription subscription,
+            SubscriptionDroppedReason reason,
             Exception exc)
             => _logger.LogError(
                 "Projection {SubscriptionName} dropped with {DropReason}, Exception: {ExceptionMessage}",
                 _name, reason, $"{exc.Message} {exc.StackTrace}"
             );
 
-        public void Stop() => _subscription.Stop();
+        public void Stop() => _subscription.Dispose();
     }
 }

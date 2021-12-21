@@ -1,4 +1,4 @@
-﻿using EventStore.ClientAPI;
+﻿using EventStore.Client;
 using Marketplace.Ads;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
@@ -43,12 +43,12 @@ namespace Marketplace
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var esConnection = EventStoreConnection.Create(
-                Configuration["eventStore:connectionString"],
-                ConnectionSettings.Create().KeepReconnecting(),
-                Environment.ApplicationName
+            var client = new EventStoreClient(
+                EventStoreClientSettings.Create(
+                    Configuration["eventStore:connectionString"]
+                )
             );
-            var eventStore = new EventStore.EventStore(esConnection);
+            var eventStore = new EventStore.EventStore(client);
             var purgomalumClient = new PurgomalumClient();
 
             var documentStore = ConfigureRavenDb(
@@ -56,7 +56,7 @@ namespace Marketplace
             );
             
             services.AddSingleton(new ImageQueryService(ImageStorage.GetFile));
-            services.AddSingleton(esConnection);
+            services.AddSingleton(client);
 
             services.AddSingleton<IEventStore>(eventStore);
 

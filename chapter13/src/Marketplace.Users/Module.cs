@@ -1,5 +1,5 @@
 using System;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
 using Marketplace.RavenDb;
@@ -54,7 +54,7 @@ namespace Marketplace.Users
                             c.GetRequiredService<GetUsersModuleSession>();
 
                         return new SubscriptionManager(
-                            c.GetEsConnection(),
+                            c.GetEventStoreClient(),
                             new RavenDbCheckpointStore(
                                 () => getSession(),
                                 SubscriptionName
@@ -76,11 +76,11 @@ namespace Marketplace.Users
 
             return builder;
         }
-
-        static IEventStoreConnection GetEsConnection(
+        
+        static EventStoreClient GetEventStoreClient(
             this IServiceProvider provider
         )
-            => provider.GetRequiredService<IEventStoreConnection>();
+            => provider.GetRequiredService<EventStoreClient>();
 
         static IAggregateStore GetAggregateStore(this IServiceProvider provider)
             => provider.GetRequiredService<IAggregateStore>();

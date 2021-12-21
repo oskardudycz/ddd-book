@@ -1,5 +1,5 @@
 using System;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using Marketplace.Ads.ClassifiedAds;
 using Marketplace.Ads.Domain.Shared;
 using Marketplace.Ads.Queries.Projections;
@@ -48,7 +48,7 @@ namespace Marketplace.Ads
                             .OpenAsyncSession(databaseName);
 
                     return new SubscriptionManager(
-                        c.GetEsConnection(),
+                        c.GetEventStoreClient(),
                         new RavenDbCheckpointStore(
                             GetSession, SubscriptionName
                         ),
@@ -79,12 +79,13 @@ namespace Marketplace.Ads
         )
             => provider.GetRequiredService<IDocumentStore>();
         
-        static IEventStoreConnection GetEsConnection(
-            this IServiceProvider provider
-        )
-            => provider.GetRequiredService<IEventStoreConnection>();
 
         static IAggregateStore GetAggregateStore(this IServiceProvider provider)
             => provider.GetRequiredService<IAggregateStore>();
+        
+        static EventStoreClient GetEventStoreClient(
+            this IServiceProvider provider
+        )
+            => provider.GetRequiredService<EventStoreClient>();
     }
 }
