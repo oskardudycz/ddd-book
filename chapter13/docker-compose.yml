@@ -4,7 +4,7 @@ services:
 
   eventstore:
     container_name: marketplace-ch13-eventstore
-    
+    image: eventstore/eventstore:21.10.0-buster-slim
     # use this image if you're running ARM-based proc like Apple M1
     # image: ghcr.io/eventstore/eventstore:21.10.0-alpha-arm64v8
     environment:
@@ -27,7 +27,5 @@ services:
       - RAVEN_Security_UnsecuredAccessAllowed=PrivateNetwork
       - RAVEN_Setup_Mode=None
       - RAVEN_License_Eula_Accepted=true
-    volumes:
-      - ravendb-data:/opt/RavenDB/Server/RavenData
     ports:
       - "8080:8080"
