@@ -1,6 +1,5 @@
 using System;
 using EventStore.Client;
-using EventStore.ClientAPI;
 using Marketplace.Ads.Integration.ClassifiedAds;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
@@ -33,12 +32,11 @@ namespace Marketplace.Ads.Integration
                         => c.GetRavenStore()
                             .OpenAsyncSession(databaseName);
 
-                    var connection = c.GetEsConnection();
-                    var client = c.GetEsClient();
+                    var client = c.GetEventStoreClient();
                     var eventStore = c.GetEventStore();
 
                     return new SubscriptionManager(
-                        connection,
+                        client,
                         new EsCheckpointStore(
                             client, SubscriptionName
                         ),
@@ -66,12 +64,7 @@ namespace Marketplace.Ads.Integration
         )
             => provider.GetRequiredService<IEventStore>();
 
-        static IEventStoreConnection GetEsConnection(
-            this IServiceProvider provider
-        )
-            => provider.GetRequiredService<IEventStoreConnection>();
-        
-        static EventStoreClient GetEsClient(
+        static EventStoreClient GetEventStoreClient(
             this IServiceProvider provider
         )
             => provider.GetRequiredService<EventStoreClient>();

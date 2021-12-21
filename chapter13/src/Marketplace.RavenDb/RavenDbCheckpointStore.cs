@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using Marketplace.EventSourcing;
 using Raven.Client.Documents.Session;
 
@@ -24,7 +23,7 @@ namespace Marketplace.RavenDb
             using var session = _getSession();
 
             var checkpoint = await session.LoadAsync<Checkpoint>(_checkpointName);
-            return checkpoint?.Position ?? (ulong?)AllCheckpoint.AllStart?.CommitPosition;
+            return checkpoint?.Position;
         }
 
         public async Task StoreCheckpoint(ulong? position)

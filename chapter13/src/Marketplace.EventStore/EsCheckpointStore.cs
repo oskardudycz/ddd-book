@@ -34,8 +34,13 @@ namespace Marketplace.EventStore
                 1
             );
 
-            var eventData = await readResult
-                .FirstOrDefaultAsync();
+            var eventData = default(ResolvedEvent);
+
+            if (await readResult.ReadState != ReadState.StreamNotFound)
+            {
+                eventData = await readResult
+                    .FirstOrDefaultAsync();
+            }
             
             if (eventData.Equals(default(ResolvedEvent)))
             {
@@ -43,6 +48,7 @@ namespace Marketplace.EventStore
                 await SetStreamMaxCount();
                 return null;
             }
+            
 
             return eventData.Deserialize<Checkpoint>()?.Position;
         }

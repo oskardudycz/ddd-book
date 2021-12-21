@@ -2,28 +2,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using Microsoft.Extensions.Hosting;
 
 namespace Marketplace.EventStore
 {
     public class EventStoreService : IHostedService
     {
-        readonly IEventStoreConnection _esConnection;
+        readonly EventStoreClient _esClient;
         readonly IEnumerable<SubscriptionManager> _subscriptionManagers;
 
         public EventStoreService(
-            IEventStoreConnection esConnection,
+            EventStoreClient esClient,
             IEnumerable<SubscriptionManager> subscriptionManagers)
         {
-            _esConnection = esConnection;
+            _esClient = esClient;
             _subscriptionManagers = subscriptionManagers;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await _esConnection.ConnectAsync();
-
             await Task.WhenAll(
                 _subscriptionManagers
                     .Select(projection => projection.Start())
@@ -33,7 +31,7 @@ namespace Marketplace.EventStore
         public Task StopAsync(CancellationToken cancellationToken)
         {
             _subscriptionManagers.ForEach(x => x.Stop());
-            _esConnection.Close();
+            _esClient.Dispose();
             return Task.CompletedTask;
         }
     }

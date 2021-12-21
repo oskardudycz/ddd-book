@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text;
+using System.Text.Json;
 using EventStore.Client;
 using Marketplace.EventSourcing;
-using Newtonsoft.Json;
 
 namespace Marketplace.EventStore
 {
@@ -48,7 +48,7 @@ namespace Marketplace.EventStore
             );
 
             static byte[] Serialize(object data)
-                => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data));
+                => Encoding.UTF8.GetBytes(JsonSerializer.Serialize(data));
         }
 
         public Task AppendEvents(

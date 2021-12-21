@@ -1,5 +1,4 @@
 ﻿using EventStore.Client;
-using EventStore.ClientAPI;
 using Marketplace.Ads;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
@@ -44,15 +43,9 @@ namespace Marketplace
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var esConnection = EventStoreConnection.Create(
-                Configuration["eventStore:connectionString"],
-                ConnectionSettings.Create().KeepReconnecting(),
-                Environment.ApplicationName
-            );
-
             var client = new EventStoreClient(
                 EventStoreClientSettings.Create(
-                    Configuration["eventStore:gRPCConnectionString"]
+                    Configuration["eventStore:connectionString"]
                 )
             );
             var eventStore = new EventStore.EventStore(client);
@@ -63,7 +56,6 @@ namespace Marketplace
             );
             
             services.AddSingleton(new ImageQueryService(ImageStorage.GetFile));
-            services.AddSingleton(esConnection);
             services.AddSingleton(client);
 
             services.AddSingleton<IEventStore>(eventStore);

@@ -1,6 +1,5 @@
 using System;
 using EventStore.Client;
-using EventStore.ClientAPI;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
 using Marketplace.PaidServices.ClassifiedAds;
@@ -48,7 +47,7 @@ namespace Marketplace.PaidServices
                             .OpenAsyncSession(databaseName);
 
                     return new SubscriptionManager(
-                        c.GetRequiredService<IEventStoreConnection>(),
+                        c.GetEventStoreClient(),
                         new RavenDbCheckpointStore(
                             GetSession, subscriptionName
                         ),
@@ -79,14 +78,12 @@ namespace Marketplace.PaidServices
                 {
                     var service =
                         c.GetRequiredService<ClassifiedAdCommandService>();
-                    var connection =
-                        c.GetRequiredService<IEventStoreConnection>();
                     var client =
-                        c.GetRequiredService<EventStoreClient>();
+                        c.GetEventStoreClient();
                     const string subscriptionName = "servicesReactors";
 
                     return new SubscriptionManager(
-                        connection,
+                        client,
                         new EsCheckpointStore(client, subscriptionName),
                         subscriptionName,
                         StreamName.Custom(StreamNames.AdsIntegrationStream),
@@ -104,6 +101,11 @@ namespace Marketplace.PaidServices
             return builder;
         }
 
+        static EventStoreClient GetEventStoreClient(
+            this IServiceProvider provider
+        )
+            => provider.GetRequiredService<EventStoreClient>();
+        
         static IFunctionalAggregateStore GetStore(
             this IServiceProvider provider
         )
