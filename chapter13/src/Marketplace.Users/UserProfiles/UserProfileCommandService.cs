@@ -2,6 +2,7 @@ using System;
 using Marketplace.EventSourcing;
 using Marketplace.Users.Domain.Shared;
 using Marketplace.Users.Domain.UserProfiles;
+using Microsoft.Extensions.Logging;
 using static Marketplace.Users.UserProfiles.Commands;
 
 namespace Marketplace.Users.UserProfiles
@@ -11,8 +12,9 @@ namespace Marketplace.Users.UserProfiles
     {
         public UserProfileCommandService(
             IAggregateStore store,
-            CheckTextForProfanity checkText
-        ) : base(store)
+            CheckTextForProfanity checkText,
+            ILogger<UserProfileCommandService> logger
+        ) : base(store, logger)
         {
             CreateWhen<V1.RegisterUser>(
                 cmd => new UserId(cmd.UserId),

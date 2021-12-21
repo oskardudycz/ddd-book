@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using EventStore.ClientAPI;
 using Marketplace.EventSourcing;
 using Marketplace.EventStore;
@@ -9,6 +8,7 @@ using Marketplace.Users.Domain.Shared;
 using Marketplace.Users.Projections;
 using Marketplace.Users.UserProfiles;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using static Marketplace.Users.Projections.ReadModels;
@@ -31,7 +31,8 @@ namespace Marketplace.Users
                     c =>
                         new UserProfileCommandService(
                             c.GetAggregateStore(),
-                            profanityCheck
+                            profanityCheck,
+                            c.GetRequiredService<ILogger<UserProfileCommandService>>()
                         )
                 )
                 .AddSingleton<GetUsersModuleSession>(
@@ -60,9 +61,11 @@ namespace Marketplace.Users
                             ),
                             SubscriptionName,
                             StreamName.AllStream,
+                            c.GetRequiredService<ILogger<SubscriptionManager>>(),
                             new RavenDbProjection<UserDetails>(
                                 () => getSession(),
-                                UserDetailsProjection.GetHandler
+                                UserDetailsProjection.GetHandler,
+                                c.GetRequiredService<ILogger<RavenDbProjection<UserDetails>>>()
                             )
                         );
                     }

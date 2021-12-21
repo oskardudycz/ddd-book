@@ -71,6 +71,11 @@ namespace Marketplace.EventStore
                     stream, start, pageSize, true
                 );
 
+                if (page.Status == SliceReadStatus.StreamNotFound)
+                    throw new ArgumentOutOfRangeException(
+                        nameof(stream), $"Stream '{stream}' was not found"
+                    );
+
                 events.AddRange(
                     page.Events.Select(
                         resolvedEvent => resolvedEvent.Deserialze()

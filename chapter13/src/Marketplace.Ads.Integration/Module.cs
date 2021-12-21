@@ -5,6 +5,7 @@ using Marketplace.EventSourcing;
 using Marketplace.EventStore;
 using Marketplace.RavenDb;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 
@@ -41,7 +42,9 @@ namespace Marketplace.Ads.Integration
                         ),
                         SubscriptionName,
                         StreamName.AllStream,
+                        c.GetRequiredService<ILogger<SubscriptionManager>>(),
                         new EventStoreReactor(
+                            c.GetRequiredService<ILogger<EventStoreReactor>>(),
                             e => AdsReaction.React(eventStore, GetSession, e)
                         )
                     );

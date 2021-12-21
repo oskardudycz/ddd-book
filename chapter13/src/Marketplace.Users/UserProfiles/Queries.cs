@@ -6,14 +6,14 @@ namespace Marketplace.Users.UserProfiles
 {
     public static class Queries
     {
-        public static Task<UserDetails> GetUserDetails(
+        public static async Task<UserDetails> GetUserDetails(
             this GetUsersModuleSession getSession,
             Guid id
         )
         {
             using var session = getSession();
 
-            return session.LoadAsync<UserDetails>(
+            return await session.LoadAsync<UserDetails>(
                 UserDetails.GetDatabaseId(id)
             );
         }

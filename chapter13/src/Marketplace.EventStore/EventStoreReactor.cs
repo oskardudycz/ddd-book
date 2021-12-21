@@ -2,18 +2,22 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Marketplace.EventSourcing;
-using Marketplace.EventStore.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Marketplace.EventStore
 {
     public class EventStoreReactor : ISubscription
     {
-        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        public EventStoreReactor(params Reactor[] reactions)
-            => _reactions = reactions;
+        public EventStoreReactor(
+            ILogger<EventStoreReactor> logger,
+            params Reactor[] reactions)
+        {
+            this.logger = logger;
+            _reactions = reactions;
+        }
 
         readonly Reactor[] _reactions;
+        readonly ILogger<EventStoreReactor> logger;
 
         public Task Project(object @event)
         {
@@ -23,7 +27,7 @@ namespace Marketplace.EventStore
 
             if (!handlers.Any()) return Task.CompletedTask;
 
-            Log.Debug("Reacting to event {event}", @event);
+            logger.LogDebug("Reacting to event {Event}", @event);
 
             return Task.WhenAll(handlers.Select(x => x()));
         }

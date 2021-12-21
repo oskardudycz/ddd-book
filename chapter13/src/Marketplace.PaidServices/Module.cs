@@ -10,6 +10,7 @@ using Marketplace.PaidServices.Queries.Orders;
 using Marketplace.PaidServices.Reactors;
 using Marketplace.RavenDb;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using static Marketplace.PaidServices.Queries.Orders.ReadModels;
@@ -52,17 +53,21 @@ namespace Marketplace.PaidServices
                         ),
                         subscriptionName,
                         StreamName.AllStream,
+                        c.GetRequiredService<ILogger<SubscriptionManager>>(),
                         new RavenDbProjection<OrderDraft>(
                             GetSession,
-                            DraftOrderProjection.GetHandler
+                            DraftOrderProjection.GetHandler,
+                            c.GetRequiredService<ILogger<RavenDbProjection<OrderDraft>>>()
                         ),
                         new RavenDbProjection<CompletedOrder>(
                             GetSession,
-                            CompletedOrderProjection.GetHandler
+                            CompletedOrderProjection.GetHandler,
+                            c.GetRequiredService<ILogger<RavenDbProjection<CompletedOrder>>>()
                         ),
                         new RavenDbProjection<ReadModels.AdActiveServices>(
                             GetSession,
-                            ActiveServicesProjection.GetHandler
+                            ActiveServicesProjection.GetHandler,
+                            c.GetRequiredService<ILogger<RavenDbProjection<ReadModels.AdActiveServices>>>()
                         )
                     );
                 }
@@ -83,7 +88,9 @@ namespace Marketplace.PaidServices
                         new EsCheckpointStore(connection, subscriptionName),
                         subscriptionName,
                         StreamName.Custom(StreamNames.AdsIntegrationStream),
+                        c.GetRequiredService<ILogger<SubscriptionManager>>(),
                         new EventStoreReactor(
+                            c.GetRequiredService<ILogger<EventStoreReactor>>(),
                             x => OrderReaction.React(service, x)
                         )
                     );

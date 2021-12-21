@@ -8,7 +8,6 @@ using Marketplace.Infrastructure.Vue;
 using Marketplace.Modules.Images;
 using Marketplace.PaidServices;
 using Marketplace.Users;
-using Marketplace.WebApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -16,9 +15,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using static Marketplace.Infrastructure.RavenDb.Configuration;
-using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 // ReSharper disable UnusedMember.Global
 
@@ -31,7 +30,7 @@ namespace Marketplace
         public const string CookieScheme = "MarketplaceScheme";
 
         public Startup(
-            IHostingEnvironment environment,
+            IWebHostEnvironment  environment,
             IConfiguration configuration
         )
         {
@@ -40,7 +39,7 @@ namespace Marketplace
         }
 
         IConfiguration Configuration { get; }
-        IHostingEnvironment Environment { get; }
+        IWebHostEnvironment  Environment { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -55,18 +54,18 @@ namespace Marketplace
             var documentStore = ConfigureRavenDb(
                 Configuration["ravenDb:server"]
             );
-
+            
             services.AddSingleton(new ImageQueryService(ImageStorage.GetFile));
             services.AddSingleton(esConnection);
 
             services.AddSingleton<IEventStore>(eventStore);
 
-            services.AddSingleton<IAggregateStore>(
-                new EsAggregateStore(eventStore)
+            services.AddSingleton<IAggregateStore>(sp =>
+                new EsAggregateStore(eventStore, sp.GetRequiredService<ILogger<EsAggregateStore>>())
             );
             services.AddSingleton(documentStore);
 
-            services.AddSingleton<IHostedService, EventStoreService>();
+            services.AddHostedService<EventStoreService>();
 
             services
                 .AddAuthentication(
@@ -76,7 +75,10 @@ namespace Marketplace
 
             services
                 .AddMvcCore(
-                    options => options.Conventions.Add(new CommandConvention())
+                    options =>
+                    {
+                        options.EnableEndpointRouting = false;
+                    }
                 )
                 .AddApplicationPart(GetType().Assembly)
                 .AddAdsModule(
@@ -89,9 +91,7 @@ namespace Marketplace
                     purgomalumClient.CheckForProfanity
                 )
                 .AddPaidServicesModule("PaidServices")
-                .AddJsonFormatters()
-                .AddApiExplorer()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .AddApiExplorer();
 
             services.AddSpaStaticFiles(
                 configuration =>
@@ -102,7 +102,7 @@ namespace Marketplace
                 c =>
                     c.SwaggerDoc(
                         "v1",
-                        new Info
+                        new OpenApiInfo
                         {
                             Title = "ClassifiedAds", Version = "v1"
                         }
@@ -110,12 +110,15 @@ namespace Marketplace
             );
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
 
             app.UseAuthentication();
-
+            
             app.UseMvc(
                 routes =>
                 {
